@@ -60,6 +60,7 @@ func main() {
 	v1.Get("/health", handlerHealtCheck)
 	v1.Get("/error", handlerError)
 	v1.Post("/users", apiCfg.handlerCreateUser)
+	v1.Get("/users", apiCfg.handlerGetUser)
 
 	router.Mount("/v1", v1)
 
