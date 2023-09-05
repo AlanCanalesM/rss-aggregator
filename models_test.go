@@ -47,3 +47,49 @@ func Test_databaseUserToUser(t *testing.T) {
 		})
 	}
 }
+
+func Test_databaseFeedsToFeeds(t *testing.T) {
+	testUuid := uuid.New()
+	timeStamp := time.Now()
+	type args struct {
+		dbFeeds []database.Feed
+	}
+	tests := []struct {
+		name string
+		args args
+		want []Feed
+	}{
+		{
+			name: "Valid test",
+			args: args{
+				dbFeeds: []database.Feed{
+					database.Feed{
+						ID:        testUuid,
+						CreatedAt: timeStamp,
+						UpdatedAt: timeStamp,
+						Name:      "someblog",
+						Url:       "myurl",
+						UserID:    testUuid,
+					},
+				},
+			},
+			want: []Feed{
+				Feed{
+					ID:         testUuid,
+					Created_at: timeStamp,
+					Updated_at: timeStamp,
+					Name:       "someblog",
+					URL:        "myurl",
+					UserID:     testUuid,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := databaseFeedsToFeeds(tt.args.dbFeeds); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("databaseFeedsToFeeds() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
