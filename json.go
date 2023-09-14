@@ -6,6 +6,10 @@ import (
 	"net/http"
 )
 
+// This file will contain the functions to respond to the client
+// We will have a function to respond with an error
+// We will have a function to respond with JSON
+
 func responseWithError(W http.ResponseWriter, code int, msg string) {
 
 	if code > 499 {

@@ -10,6 +10,7 @@ import (
 
 type authedHandler func(http.ResponseWriter, *http.Request, database.User)
 
+// This file will contain the middleware for the application
 func (apiCfg *apiConfig) middlewareAuth(handler authedHandler) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {

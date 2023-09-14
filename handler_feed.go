@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// This file will contain the handlers for the feed in the application
 func (apiCfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, user database.User) {
 
 	type parameters struct {
