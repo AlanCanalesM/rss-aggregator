@@ -29,7 +29,7 @@ func main() {
 
 	portString := os.Getenv("PORT")
 	if portString == "" {
-		log.Fatal("PORT is not found")
+		portString = "8080"
 	}
 
 	dbURL := os.Getenv("DB_URL")
