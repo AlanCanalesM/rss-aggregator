@@ -63,3 +63,15 @@ func (apiCfg *apiConfig) handlerGetPostForUser(w http.ResponseWriter, r *http.Re
 	responseWithJSON(w, 200, databasePostsToPosts(posts))
 
 }
+
+func (apiCfg *apiConfig) handlerGetAllPosts(w http.ResponseWriter, r *http.Request) {
+
+	posts, err := apiCfg.DB.GetAllPosts(r.Context())
+
+	if err != nil {
+		responseWithError(w, 400, "We couldn't reach the posts")
+	}
+
+	responseWithJSON(w, 200, databasePostsToPosts(posts))
+
+}

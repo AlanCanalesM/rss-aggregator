@@ -48,8 +48,6 @@ func main() {
 		DB: db,
 	}
 
-	startScraping(db, 10, time.Minute)
-
 	router := chi.NewRouter()
 
 	router.Use(cors.Handler(
@@ -71,6 +69,7 @@ func main() {
 	v1.Get("/users", apiCfg.middlewareAuth(apiCfg.handlerGetUser))
 	v1.Get("/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerGetFeedFollows))
 	v1.Get("/posts", apiCfg.middlewareAuth(apiCfg.handlerGetPostForUser))
+	v1.Get("/allPosts", apiCfg.handlerGetAllPosts)
 
 	v1.Post("/users", apiCfg.handlerCreateUser)
 	v1.Post("/feeds", apiCfg.middlewareAuth(apiCfg.handlerCreateFeed))
@@ -92,4 +91,5 @@ func main() {
 		log.Printf("Error starting server %v", err)
 	}
 
+	startScraping(db, 10, time.Minute)
 }
