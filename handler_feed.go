@@ -10,20 +10,25 @@ import (
 	"github.com/google/uuid"
 )
 
-// This file will contain the handlers for the feed in the application
-func (apiCfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, user database.User) {
-
+// handlerCreateFeed handles the creation of a feed.
+func (apiCfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Name string `json:"name"`
-		URL  string `json:"url"`
+		Name string    `json:"name"`
+		URL  string    `json:"url"`
+		ID   uuid.UUID `json:"id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
 
 	params := parameters{}
-	err := decoder.Decode(&params)
+	if err := decoder.Decode(&params); err != nil {
+		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Error parsing JSON: %v", err))
+		return
+	}
+
+	user, err := apiCfg.DB.GetUserByID(r.Context(), params.ID)
 	if err != nil {
-		responseWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
+		responseWithError(w, http.StatusNotFound, fmt.Sprintf("Could not get user: %v", err))
 		return
 	}
 
@@ -37,23 +42,21 @@ func (apiCfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Reques
 	})
 
 	if err != nil {
-		responseWithError(w, 400, fmt.Sprintf("Could not create user: %v", err))
+		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Could not create user: %v", err))
 		return
 	}
 
-	responseWithJSON(w, 200, databaseFeedToFeed(feed))
-
+	responseWithJSON(w, http.StatusOK, databaseFeedToFeed(feed))
 }
 
+// handlerGetFeeds handles the retrieval of feeds.
 func (apiCfg *apiConfig) handlerGetFeeds(w http.ResponseWriter, r *http.Request) {
-
 	feeds, err := apiCfg.DB.GetFeeds(r.Context())
 
 	if err != nil {
-		responseWithError(w, 400, fmt.Sprintf("Could not get feeds: %v", err))
+		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Could not get feeds: %v", err))
 		return
 	}
 
-	responseWithJSON(w, 200, databaseFeedsToFeeds(feeds))
-
+	responseWithJSON(w, http.StatusOK, databaseFeedsToFeeds(feeds))
 }

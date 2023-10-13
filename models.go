@@ -7,94 +7,37 @@ import (
 	"github.com/google/uuid"
 )
 
-// This file will contain the models for the application
-// We will have a model for each table in the database
-// We will also have a function to convert from the database model to the application model
-
+// User represents the User model in the application.
 type User struct {
-	ID         uuid.UUID `json:"id"`
-	Created_at time.Time `json:"created_at"`
-	Updated_at time.Time `json:"updated_at"`
-	Name       string    `json:"name"`
-	APIKey     string    `json:"apikey"`
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Name      string    `json:"name"`
+	APIKey    string    `json:"apikey"`
+	Username  string    `json:"username"`
+	Password  string    `json:"password"`
 }
 
-func databaseUserToUser(dbUser database.User) User {
-
-	return User{
-		ID:         dbUser.ID,
-		Created_at: dbUser.CreatedAt,
-		Updated_at: dbUser.UpdatedAt,
-		Name:       dbUser.Name,
-		APIKey:     dbUser.Apikey,
-	}
-}
-
+// Feed represents the Feed model in the application.
 type Feed struct {
-	ID         uuid.UUID `json:"id"`
-	Created_at time.Time `json:"created_at"`
-	Updated_at time.Time `json:"updated_at"`
-	Name       string    `json:"name"`
-	URL        string    `json:"url"`
-	UserID     uuid.UUID `json:"user_id"`
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Name      string    `json:"name"`
+	URL       string    `json:"url"`
+	UserID    uuid.UUID `json:"user_id"`
 }
 
-func databaseFeedToFeed(dbFeed database.Feed) Feed {
-
-	return Feed{
-		ID:         dbFeed.ID,
-		Created_at: dbFeed.CreatedAt,
-		Updated_at: dbFeed.UpdatedAt,
-		Name:       dbFeed.Name,
-		URL:        dbFeed.Url,
-		UserID:     dbFeed.UserID,
-	}
-}
-
-func databaseFeedsToFeeds(dbFeeds []database.Feed) []Feed {
-
-	feeds := []Feed{}
-
-	for _, feed := range dbFeeds {
-		feeds = append(feeds, databaseFeedToFeed(feed))
-	}
-
-	return feeds
-
-}
-
+// FeedFollow represents the FeedFollow model in the application.
 type FeedFollow struct {
-	ID         uuid.UUID `json:"id"`
-	Created_at time.Time `json:"created_at"`
-	Updated_at time.Time `json:"updated_at"`
-	UserID     uuid.UUID `json:"user_id"`
-	FeedID     uuid.UUID `json:"feed_id"`
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	UserID    uuid.UUID `json:"user_id"`
+	FeedID    uuid.UUID `json:"feed_id"`
 }
 
-func databaseFeedFollowToFeedFollow(dbFeedFollow database.FeedFollow) FeedFollow {
-
-	return FeedFollow{
-		ID:         dbFeedFollow.ID,
-		Created_at: dbFeedFollow.CreatedAt,
-		Updated_at: dbFeedFollow.UpdatedAt,
-		UserID:     dbFeedFollow.UserID,
-		FeedID:     dbFeedFollow.FeedID,
-	}
-}
-
-func databaseFeedFollowsToFeedFollows(dbFeedFollows []database.FeedFollow) []FeedFollow {
-
-	feedFollows := []FeedFollow{}
-
-	for _, feedFollow := range dbFeedFollows {
-
-		feedFollows = append(feedFollows, databaseFeedFollowToFeedFollow(feedFollow))
-	}
-
-	return feedFollows
-
-}
-
+// Post represents the Post model in the application.
 type Post struct {
 	ID          uuid.UUID `json:"id"`
 	CreatedAt   time.Time `json:"created_at"`
@@ -106,14 +49,67 @@ type Post struct {
 	FeedID      uuid.UUID `json:"feed_id"`
 }
 
-func databasePostToPost(dbPost database.Post) Post {
-
-	var description *string
-
-	if dbPost.Description.Valid {
-		description = &dbPost.Description.String
+// databaseUserToUser converts a database User to an application User.
+func databaseUserToUser(dbUser database.User) User {
+	return User{
+		ID:        dbUser.ID,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+		Name:      dbUser.Name,
+		APIKey:    dbUser.Apikey,
+		Username:  dbUser.Username,
+		Password:  dbUser.Password,
 	}
+}
 
+// databaseFeedToFeed converts a database Feed to an application Feed.
+func databaseFeedToFeed(dbFeed database.Feed) Feed {
+	return Feed{
+		ID:        dbFeed.ID,
+		CreatedAt: dbFeed.CreatedAt,
+		UpdatedAt: dbFeed.UpdatedAt,
+		Name:      dbFeed.Name,
+		URL:       dbFeed.Url,
+		UserID:    dbFeed.UserID,
+	}
+}
+
+// databaseFeedsToFeeds converts a slice of database Feeds to application Feeds.
+func databaseFeedsToFeeds(dbFeeds []database.Feed) []Feed {
+	feeds := make([]Feed, len(dbFeeds))
+	for i, feed := range dbFeeds {
+		feeds[i] = databaseFeedToFeed(feed)
+	}
+	return feeds
+}
+
+// databaseFeedFollowToFeedFollow converts a database FeedFollow to an application FeedFollow.
+func databaseFeedFollowToFeedFollow(dbFeedFollow database.FeedFollow) FeedFollow {
+	return FeedFollow{
+		ID:        dbFeedFollow.ID,
+		CreatedAt: dbFeedFollow.CreatedAt,
+		UpdatedAt: dbFeedFollow.UpdatedAt,
+		UserID:    dbFeedFollow.UserID,
+		FeedID:    dbFeedFollow.FeedID,
+	}
+}
+
+// databaseFeedFollowsToFeedFollows converts a slice of database FeedFollows to application FeedFollows.
+func databaseFeedFollowsToFeedFollows(dbFeedFollows []database.FeedFollow) []FeedFollow {
+	feedFollows := make([]FeedFollow, len(dbFeedFollows))
+	for i, feedFollow := range dbFeedFollows {
+		feedFollows[i] = databaseFeedFollowToFeedFollow(feedFollow)
+	}
+	return feedFollows
+}
+
+// databasePostToPost converts a database Post to an application Post.
+func databasePostToPost(dbPost database.Post) Post {
+	var description *string
+	if dbPost.Description.Valid {
+		desc := dbPost.Description.String
+		description = &desc
+	}
 	return Post{
 		ID:          dbPost.ID,
 		CreatedAt:   dbPost.CreatedAt,
@@ -126,13 +122,11 @@ func databasePostToPost(dbPost database.Post) Post {
 	}
 }
 
+// databasePostsToPosts converts a slice of database Posts to application Posts.
 func databasePostsToPosts(dbPosts []database.Post) []Post {
-
-	posts := []Post{}
-
-	for _, dbPost := range dbPosts {
-		posts = append(posts, databasePostToPost(dbPost))
+	posts := make([]Post, len(dbPosts))
+	for i, post := range dbPosts {
+		posts[i] = databasePostToPost(post)
 	}
-
 	return posts
 }

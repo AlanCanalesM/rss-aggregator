@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"strings"
 	"sync"
@@ -13,24 +12,21 @@ import (
 	"github.com/google/uuid"
 )
 
-// This function will start the scraping process
-// It will fetch the feeds from the database
-// and then it will scrape each feed
-// It will run on a goroutine and it will run every timeBetweenRequest duration
-func startScraping(
-	db *database.Queries,
-	concurrency int,
-	timeBetweenRequest time.Duration,
-) {
+// ScrapingConfig contains the configuration for the scraping process.
+type ScrapingConfig struct {
+	DB                  *database.Queries
+	Concurrency         int
+	TimeBetweenRequests time.Duration
+}
 
-	log.Printf("Scraping on %v goroutines every %s durarion", concurrency, timeBetweenRequest)
+// StartScraping initiates the scraping process.
+func StartScraping(config ScrapingConfig) {
+	log.Printf("Scraping on %v goroutines every %s duration", config.Concurrency, config.TimeBetweenRequests)
 
-	ticker := time.NewTicker(timeBetweenRequest)
+	ticker := time.NewTicker(config.TimeBetweenRequests)
 
-	for ; ; <-ticker.C {
-
-		feeds, err := db.GetNextFeedToFetch(context.Background(), int32(concurrency))
-
+	for range ticker.C {
+		feeds, err := config.DB.GetNextFeedToFetch(context.Background(), int32(config.Concurrency))
 		if err != nil {
 			log.Println("Error fetching feeds: ", err)
 			continue
@@ -39,34 +35,31 @@ func startScraping(
 		wg := &sync.WaitGroup{}
 
 		for _, feed := range feeds {
-
 			wg.Add(1)
-			go scrapeFeed(db, wg, feed)
+			go scrapeFeed(config.DB, wg, feed)
 		}
 
 		wg.Wait()
 	}
 }
 
-// This function will scrape a feed
-// It will fetch the feed from the url
-// and then it will save the posts in the database
+// ScrapeFeed scrapes a feed and saves the posts to the database.
 func scrapeFeed(db *database.Queries, wg *sync.WaitGroup, feed database.Feed) {
 	defer wg.Done()
 
 	_, err := db.MarkFeedAsFetched(context.Background(), feed.ID)
 	if err != nil {
-		log.Println("Error marked feed: ", err)
+		log.Println("Error marking feed as fetched: ", err)
+		return
 	}
 
-	rssFeed, err := urlToFeed(feed.Url)
-
+	rssFeed, err := FetchRSSFeed(feed.Url)
 	if err != nil {
 		log.Println("Error fetching feed: ", err)
+		return
 	}
 
 	for _, item := range rssFeed.Channel.Item {
-
 		description := sql.NullString{}
 
 		if item.Description != "" {
@@ -75,12 +68,11 @@ func scrapeFeed(db *database.Queries, wg *sync.WaitGroup, feed database.Feed) {
 		}
 
 		pubAt, err := time.Parse(time.RFC1123Z, item.PubDate)
-
 		if err != nil {
-			fmt.Printf("We could not parse the date %v with err %v", item.PubDate, err)
+			log.Printf("Error parsing date %v with err %v", item.PubDate, err)
 		}
-		_, err = db.CreatePost(context.Background(), database.CreatePostParams{
 
+		_, err = db.CreatePost(context.Background(), database.CreatePostParams{
 			ID:          uuid.New(),
 			CreatedAt:   time.Now().UTC(),
 			UpdatedAt:   time.Now().UTC(),
@@ -95,10 +87,9 @@ func scrapeFeed(db *database.Queries, wg *sync.WaitGroup, feed database.Feed) {
 			if strings.Contains(err.Error(), "duplicate key") {
 				continue
 			}
-			fmt.Println("We couldn't create the post", err)
+			log.Println("Error creating the post: ", err)
 		}
 	}
 
 	log.Printf("Feed %s collected, %v posts found", feed.Name, len(rssFeed.Channel.Item))
-
 }

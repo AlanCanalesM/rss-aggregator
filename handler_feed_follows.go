@@ -11,11 +11,11 @@ import (
 	"github.com/google/uuid"
 )
 
-// This file will contain the handlers for the feed follows in the application
-func (apiCfg *apiConfig) handlerCreateFeedFollows(w http.ResponseWriter, r *http.Request, user database.User) {
-
+// handlerCreateFeedFollows handles the creation of a new feed follow entry.
+func (apiCfg *apiConfig) handlerCreateFeedFollows(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		FeedID uuid.UUID `json:"feed_id"`
+		ID     uuid.UUID `json:"id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -23,11 +23,17 @@ func (apiCfg *apiConfig) handlerCreateFeedFollows(w http.ResponseWriter, r *http
 	params := parameters{}
 	err := decoder.Decode(&params)
 	if err != nil {
-		responseWithError(w, 400, fmt.Sprintf("Error parsing JSON: %v", err))
+		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Error parsing JSON: %v", err))
 		return
 	}
 
-	feed, err := apiCfg.DB.CreatedFeedFollow(r.Context(), database.CreatedFeedFollowParams{
+	user, err := apiCfg.DB.GetUserByID(r.Context(), params.ID)
+	if err != nil {
+		responseWithError(w, http.StatusNotFound, fmt.Sprintf("Could not get user: %v", err))
+		return
+	}
+
+	feedFollow, err := apiCfg.DB.CreatedFeedFollow(r.Context(), database.CreatedFeedFollowParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
@@ -36,48 +42,55 @@ func (apiCfg *apiConfig) handlerCreateFeedFollows(w http.ResponseWriter, r *http
 	})
 
 	if err != nil {
-		responseWithError(w, 400, fmt.Sprintf("Could not create this feed follows: %v", err))
+		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Could not create this feed follow: %v", err))
 		return
 	}
 
-	responseWithJSON(w, 200, databaseFeedFollowToFeedFollow(feed))
-
+	responseWithJSON(w, http.StatusOK, databaseFeedFollowToFeedFollow(feedFollow))
 }
 
-func (apiCfg *apiConfig) handlerGetFeedFollows(w http.ResponseWriter, r *http.Request, user database.User) {
-
-	feedFollows, err := apiCfg.DB.GetFeedFollows(r.Context(), user.ID)
+// handlerGetFeedFollows handles the retrieval of feed follows for a specific user.
+func (apiCfg *apiConfig) handlerGetFeedFollows(w http.ResponseWriter, r *http.Request) {
+	userIdStr := chi.URLParam(r, "userID")
+	userIdUUID, err := uuid.Parse(userIdStr)
 
 	if err != nil {
-		responseWithError(w, 400, fmt.Sprintf("Could not create this feed follows: %v", err))
+		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Error parsing UUID: %v", err))
 		return
 	}
 
-	responseWithJSON(w, 200, databaseFeedFollowsToFeedFollows(feedFollows))
-
-}
-
-func (apiCfg *apiConfig) handlerDeleteFeedFollows(w http.ResponseWriter, r *http.Request, user database.User) {
-
-	feedFollowIdStr := chi.URLParam(r, "feedFollowID")
-	feedFollowIdUUID, err := uuid.Parse(feedFollowIdStr)
+	feedFollows, err := apiCfg.DB.GetFeedFollows(r.Context(), userIdUUID)
 
 	if err != nil {
-		responseWithError(w, 400, fmt.Sprintf("Could not parse the feed follow id: %v", err))
+		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Could not retrieve feed follows: %v", err))
+		return
+	}
+
+	responseWithJSON(w, http.StatusOK, databaseFeedFollowsToFeedFollows(feedFollows))
+}
+
+// handlerDeleteFeedFollows handles the deletion of a feed follow entry.
+func (apiCfg *apiConfig) handlerDeleteFeedFollows(w http.ResponseWriter, r *http.Request) {
+	feedFollowIDStr := chi.URLParam(r, "feedFollowID")
+	feedFollowIDUUID, err := uuid.Parse(feedFollowIDStr)
+
+	userIdStr := chi.URLParam(r, "userID")
+	userIdUUID, err := uuid.Parse(userIdStr)
+
+	if err != nil {
+		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Could not parse the feed follow ID: %v", err))
 		return
 	}
 
 	err = apiCfg.DB.DeleteFeedFollow(r.Context(), database.DeleteFeedFollowParams{
-
-		ID:     feedFollowIdUUID,
-		UserID: user.ID,
+		ID:     feedFollowIDUUID,
+		UserID: userIdUUID,
 	})
 
 	if err != nil {
-		responseWithError(w, 400, fmt.Sprintf("Could not delete the feed follows: %v", err))
+		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Could not delete the feed follow: %v", err))
 		return
 	}
 
-	responseWithJSON(w, 200, struct{}{})
-
+	responseWithJSON(w, http.StatusOK, struct{}{})
 }

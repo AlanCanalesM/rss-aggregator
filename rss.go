@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/xml"
-	"io"
+	"io/ioutil"
 	"net/http"
 	"time"
 )
@@ -24,32 +24,28 @@ type RSSItem struct {
 	PubDate     string `xml:"pubDate"`
 }
 
-func urlToFeed(url string) (RSSFeed, error) {
-
+// FetchRSSFeed fetches and parses an RSS feed from the given URL.
+func FetchRSSFeed(url string) (RSSFeed, error) {
 	httpClient := http.Client{
 		Timeout: 10 * time.Second,
 	}
 
 	resp, err := httpClient.Get(url)
-
 	if err != nil {
-		return RSSFeed{}, nil
+		return RSSFeed{}, err
 	}
-
 	defer resp.Body.Close()
 
-	dat, err := io.ReadAll(resp.Body)
+	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return RSSFeed{}, err
 	}
 
 	rssFeed := RSSFeed{}
-
-	err = xml.Unmarshal(dat, &rssFeed)
+	err = xml.Unmarshal(data, &rssFeed)
 	if err != nil {
 		return RSSFeed{}, err
 	}
 
 	return rssFeed, nil
-
 }
