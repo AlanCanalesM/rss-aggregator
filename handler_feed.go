@@ -11,11 +11,10 @@ import (
 )
 
 // handlerCreateFeed handles the creation of a feed.
-func (apiCfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request) {
+func (apiCfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, user database.User) {
 	type parameters struct {
-		Name string    `json:"name"`
-		URL  string    `json:"url"`
-		ID   uuid.UUID `json:"id"`
+		Name string `json:"name"`
+		URL  string `json:"url"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -26,7 +25,7 @@ func (apiCfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	user, err := apiCfg.DB.GetUserByID(r.Context(), params.ID)
+	user, err := apiCfg.DB.GetUserByID(r.Context(), user.ID)
 	if err != nil {
 		responseWithError(w, http.StatusNotFound, fmt.Sprintf("Could not get user: %v", err))
 		return

@@ -12,10 +12,9 @@ import (
 )
 
 // handlerCreateFeedFollows handles the creation of a new feed follow entry.
-func (apiCfg *apiConfig) handlerCreateFeedFollows(w http.ResponseWriter, r *http.Request) {
+func (apiCfg *apiConfig) handlerCreateFeedFollows(w http.ResponseWriter, r *http.Request, user database.User) {
 	type parameters struct {
 		FeedID uuid.UUID `json:"feed_id"`
-		ID     uuid.UUID `json:"id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -24,12 +23,6 @@ func (apiCfg *apiConfig) handlerCreateFeedFollows(w http.ResponseWriter, r *http
 	err := decoder.Decode(&params)
 	if err != nil {
 		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Error parsing JSON: %v", err))
-		return
-	}
-
-	user, err := apiCfg.DB.GetUserByID(r.Context(), params.ID)
-	if err != nil {
-		responseWithError(w, http.StatusNotFound, fmt.Sprintf("Could not get user: %v", err))
 		return
 	}
 
@@ -50,16 +43,9 @@ func (apiCfg *apiConfig) handlerCreateFeedFollows(w http.ResponseWriter, r *http
 }
 
 // handlerGetFeedFollows handles the retrieval of feed follows for a specific user.
-func (apiCfg *apiConfig) handlerGetFeedFollows(w http.ResponseWriter, r *http.Request) {
-	userIdStr := chi.URLParam(r, "userID")
-	userIdUUID, err := uuid.Parse(userIdStr)
+func (apiCfg *apiConfig) handlerGetFeedFollows(w http.ResponseWriter, r *http.Request, user database.User) {
 
-	if err != nil {
-		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Error parsing UUID: %v", err))
-		return
-	}
-
-	feedFollows, err := apiCfg.DB.GetFeedFollows(r.Context(), userIdUUID)
+	feedFollows, err := apiCfg.DB.GetFeedFollows(r.Context(), user.ID)
 
 	if err != nil {
 		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Could not retrieve feed follows: %v", err))
@@ -70,12 +56,9 @@ func (apiCfg *apiConfig) handlerGetFeedFollows(w http.ResponseWriter, r *http.Re
 }
 
 // handlerDeleteFeedFollows handles the deletion of a feed follow entry.
-func (apiCfg *apiConfig) handlerDeleteFeedFollows(w http.ResponseWriter, r *http.Request) {
+func (apiCfg *apiConfig) handlerDeleteFeedFollows(w http.ResponseWriter, r *http.Request, user database.User) {
 	feedFollowIDStr := chi.URLParam(r, "feedFollowID")
 	feedFollowIDUUID, err := uuid.Parse(feedFollowIDStr)
-
-	userIdStr := chi.URLParam(r, "userID")
-	userIdUUID, err := uuid.Parse(userIdStr)
 
 	if err != nil {
 		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Could not parse the feed follow ID: %v", err))
@@ -84,7 +67,7 @@ func (apiCfg *apiConfig) handlerDeleteFeedFollows(w http.ResponseWriter, r *http
 
 	err = apiCfg.DB.DeleteFeedFollow(r.Context(), database.DeleteFeedFollowParams{
 		ID:     feedFollowIDUUID,
-		UserID: userIdUUID,
+		UserID: user.ID,
 	})
 
 	if err != nil {

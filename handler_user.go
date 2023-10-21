@@ -7,58 +7,40 @@ import (
 	"time"
 
 	"github.com/AlanCanalesM/rss-aggregator/internal/database"
-	"github.com/go-chi/chi/v5"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
-// Credentials holds the user login credentials.
-type Credentials struct {
-	Password string `json:"password"`
-	Username string `json:"username"`
-}
-
-// Claims defines the JWT claims structure.
-type Claims struct {
-	Username string `json:"username"`
-	jwt.RegisteredClaims
-}
-
 // handlerSignin handles user authentication and token creation.
 func (apiCfg *apiConfig) handlerSignin(w http.ResponseWriter, r *http.Request) {
-	jwtKey := []byte("my_secret_key")
-	creds := Credentials{}
-	err := json.NewDecoder(r.Body).Decode(&creds)
+
+	type parameters struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+
+	params := parameters{}
+	err := decoder.Decode(&params)
 	if err != nil {
 		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Error parsing JSON: %v", err))
 		return
 	}
 
-	user := apiCfg.GetUser(w, r)
-
-	expirationTime := time.Now().Add(5 * time.Minute)
-
-	claims := &Claims{
-		Username: user.Username,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	tokenString, err := token.SignedString(jwtKey)
+	user, err := apiCfg.DB.GetUserByUsername(r.Context(), params.Username)
 
 	if err != nil {
-		responseWithError(w, http.StatusInternalServerError, fmt.Sprintf("Error signing JWT: %v", err))
+		responseWithError(w, http.StatusNotFound, fmt.Sprintf("Could not get user: %v", err))
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:    "token",
-		Value:   tokenString,
-		Expires: expirationTime,
-	})
+	if user.Password != params.Password {
+		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Wrong password"))
+		return
+	}
+
+	responseWithJSON(w, http.StatusOK, databaseUserToUser(user))
+
 }
 
 // handlerCreateUser handles the creation of a new user.
@@ -96,16 +78,9 @@ func (apiCfg *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Reques
 }
 
 // handlerGetUser handles the retrieval of a user.
-func (apiCfg *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request) {
-	userIdStr := chi.URLParam(r, "userID")
-	userIdUUID, err := uuid.Parse(userIdStr)
+func (apiCfg *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request, user database.User) {
 
-	if err != nil {
-		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Error parsing UUID: %v", err))
-		return
-	}
-
-	user, err := apiCfg.DB.GetUserByID(r.Context(), userIdUUID)
+	user, err := apiCfg.DB.GetUserByID(r.Context(), user.ID)
 
 	if err != nil {
 		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Could not get user: %v", err))
@@ -116,17 +91,10 @@ func (apiCfg *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request) 
 }
 
 // handlerGetPostForUser retrieves posts for a specific user.
-func (apiCfg *apiConfig) handlerGetPostForUser(w http.ResponseWriter, r *http.Request) {
-	userIdStr := chi.URLParam(r, "userID")
-	userIdUUID, err := uuid.Parse(userIdStr)
-
-	if err != nil {
-		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Error parsing UUID: %v", err))
-		return
-	}
+func (apiCfg *apiConfig) handlerGetPostForUser(w http.ResponseWriter, r *http.Request, user database.User) {
 
 	posts, err := apiCfg.DB.GetPostsForUser(r.Context(), database.GetPostsForUserParams{
-		UserID: userIdUUID,
+		UserID: user.ID,
 		Limit:  10,
 	})
 
