@@ -20,3 +20,7 @@ LIMIT $2;
 -- name: GetAllPosts :many
 SELECT * FROM posts
 ORDER BY published_at DESC;
+
+-- name: GetPostsForFeed :many
+SELECT * FROM posts
+WHERE feed_id = $1;

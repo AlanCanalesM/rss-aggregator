@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/AlanCanalesM/rss-aggregator/internal/database"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -97,6 +98,26 @@ func (apiCfg *apiConfig) handlerGetPostForUser(w http.ResponseWriter, r *http.Re
 		UserID: user.ID,
 		Limit:  10,
 	})
+
+	if err != nil {
+		responseWithError(w, http.StatusBadRequest, "Error fetching user posts")
+		return
+	}
+
+	responseWithJSON(w, http.StatusOK, databasePostsToPosts(posts))
+}
+
+func (apiCfg *apiConfig) handlerGetPostForFeed(w http.ResponseWriter, r *http.Request, user database.User) {
+
+	feedFollowIDStr := chi.URLParam(r, "feedID")
+	feedFollowIDUUID, err := uuid.Parse(feedFollowIDStr)
+
+	if err != nil {
+		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Could not parse the feed follow ID: %v", err))
+		return
+	}
+
+	posts, err := apiCfg.DB.GetPostsForFeed(r.Context(), feedFollowIDUUID)
 
 	if err != nil {
 		responseWithError(w, http.StatusBadRequest, "Error fetching user posts")

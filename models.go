@@ -35,6 +35,7 @@ type FeedFollow struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	UserID    uuid.UUID `json:"user_id"`
 	FeedID    uuid.UUID `json:"feed_id"`
+	FeedName  string    `json:"feed_name"`
 }
 
 // Post represents the Post model in the application.
@@ -91,6 +92,7 @@ func databaseFeedFollowToFeedFollow(dbFeedFollow database.FeedFollow) FeedFollow
 		UpdatedAt: dbFeedFollow.UpdatedAt,
 		UserID:    dbFeedFollow.UserID,
 		FeedID:    dbFeedFollow.FeedID,
+		FeedName:  dbFeedFollow.FeedName,
 	}
 }
 

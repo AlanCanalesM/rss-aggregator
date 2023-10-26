@@ -118,6 +118,7 @@ func mountAPIRoutes(router chi.Router, apiCfg apiConfig) {
 	v1.Get("/users", apiCfg.middlewareAuth(apiCfg.handlerGetUser))
 	v1.Get("/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerGetFeedFollows))
 	v1.Get("/posts", apiCfg.middlewareAuth(apiCfg.handlerGetPostForUser))
+	v1.Get("/posts_feed/{feedID}", apiCfg.middlewareAuth(apiCfg.handlerGetPostForFeed))
 	v1.Get("/allPosts", apiCfg.handlerGetAllPosts)
 	v1.Post("/users", apiCfg.handlerCreateUser)
 	v1.Post("/feeds", apiCfg.middlewareAuth(apiCfg.handlerCreateFeed))

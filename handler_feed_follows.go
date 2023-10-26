@@ -14,7 +14,8 @@ import (
 // handlerCreateFeedFollows handles the creation of a new feed follow entry.
 func (apiCfg *apiConfig) handlerCreateFeedFollows(w http.ResponseWriter, r *http.Request, user database.User) {
 	type parameters struct {
-		FeedID uuid.UUID `json:"feed_id"`
+		FeedID   uuid.UUID `json:"feed_id"`
+		FeedName string    `json:"feed_name"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -32,6 +33,7 @@ func (apiCfg *apiConfig) handlerCreateFeedFollows(w http.ResponseWriter, r *http
 		UpdatedAt: time.Now().UTC(),
 		UserID:    user.ID,
 		FeedID:    params.FeedID,
+		FeedName:  params.FeedName,
 	})
 
 	if err != nil {
