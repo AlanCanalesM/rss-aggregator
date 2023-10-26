@@ -46,6 +46,7 @@ func main() {
 	}
 	// Start the scraper in the background.
 	StartScraping(config)
+
 }
 
 // connectToDatabase creates a database connection and returns a Queries struct.

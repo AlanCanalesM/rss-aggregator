@@ -8,6 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/transform"
+
 	"github.com/AlanCanalesM/rss-aggregator/internal/database"
 	"github.com/google/uuid"
 )
@@ -60,11 +63,17 @@ func scrapeFeed(db *database.Queries, wg *sync.WaitGroup, feed database.Feed) {
 	}
 
 	for _, item := range rssFeed.Channel.Item {
+		// Convert description to UTF-8
 		description := sql.NullString{}
 
 		if item.Description != "" {
-			description.String = item.Description
-			description.Valid = true
+			utf8Description, err := convertToUTF8(item.Description, "windows-1252") // Replace with the source encoding if known
+			if err != nil {
+				log.Println("Error converting description to UTF-8: ", err)
+			} else {
+				description.String = utf8Description
+				description.Valid = true
+			}
 		}
 
 		pubAt, err := time.Parse(time.RFC1123Z, item.PubDate)
@@ -92,4 +101,14 @@ func scrapeFeed(db *database.Queries, wg *sync.WaitGroup, feed database.Feed) {
 	}
 
 	log.Printf("Feed %s collected, %v posts found", feed.Name, len(rssFeed.Channel.Item))
+}
+
+// Function to convert data to UTF-8
+func convertToUTF8(data, sourceEncoding string) (string, error) {
+	sourceDecoder := charmap.Windows1252.NewDecoder()
+	utf8Data, _, err := transform.String(sourceDecoder, data)
+	if err != nil {
+		return "", err
+	}
+	return utf8Data, nil
 }

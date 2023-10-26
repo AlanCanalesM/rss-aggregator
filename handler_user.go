@@ -35,7 +35,7 @@ func (apiCfg *apiConfig) handlerSignin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user.Password != params.Password {
-		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Wrong password"))
+		responseWithError(w, http.StatusNotFound, fmt.Sprintf("Wrong password"))
 		return
 	}
 
