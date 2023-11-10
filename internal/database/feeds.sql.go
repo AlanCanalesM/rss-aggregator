@@ -48,6 +48,44 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 	return i, err
 }
 
+const feedsNotFollowedByUser = `-- name: FeedsNotFollowedByUser :many
+SELECT f.id, f.created_at, f.updated_at, f.name, f.url, f.user_id, f.last_fetched_at
+FROM public.feeds f
+LEFT JOIN public.feed_follows ff ON f.id = ff.feed_id AND ff.user_id = $1
+WHERE ff.id IS NULL
+`
+
+func (q *Queries) FeedsNotFollowedByUser(ctx context.Context, userID uuid.UUID) ([]Feed, error) {
+	rows, err := q.db.QueryContext(ctx, feedsNotFollowedByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Feed
+	for rows.Next() {
+		var i Feed
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Name,
+			&i.Url,
+			&i.UserID,
+			&i.LastFetchedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getFeeds = `-- name: GetFeeds :many
 SELECT id, created_at, updated_at, name, url, user_id, last_fetched_at FROM feeds
 `

@@ -10,6 +10,19 @@ import (
 	"github.com/google/uuid"
 )
 
+func (apiCfg *apiConfig) handlerGetFeedsNotFollowed(w http.ResponseWriter, r *http.Request, user database.User) {
+
+	feeds, err := apiCfg.DB.FeedsNotFollowedByUser(r.Context(), user.ID)
+
+	if err != nil {
+		responseWithError(w, http.StatusBadRequest, fmt.Sprintf("Could not get feeds: %v", err))
+		return
+	}
+
+	responseWithJSON(w, http.StatusOK, databaseFeedsToFeeds(feeds))
+
+}
+
 // handlerCreateFeed handles the creation of a feed.
 func (apiCfg *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, user database.User) {
 	type parameters struct {

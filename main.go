@@ -115,6 +115,7 @@ func mountAPIRoutes(router chi.Router, apiCfg apiConfig) {
 	v1.Get("/health", handlerHealtCheck)
 	v1.Get("/error", handlerError)
 	v1.Get("/feeds", apiCfg.handlerGetFeeds)
+	v1.Get("/feeds_not_followed", apiCfg.middlewareAuth(apiCfg.handlerGetFeedsNotFollowed))
 	v1.Get("/users", apiCfg.middlewareAuth(apiCfg.handlerGetUser))
 	v1.Get("/feed_follows", apiCfg.middlewareAuth(apiCfg.handlerGetFeedFollows))
 	v1.Get("/posts", apiCfg.middlewareAuth(apiCfg.handlerGetPostForUser))

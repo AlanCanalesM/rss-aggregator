@@ -10,3 +10,9 @@ SELECT * FROM feeds ORDER BY last_fetched_at ASC NULLS FIRST LIMIT $1;
 
 -- name: MarkFeedAsFetched :one
 UPDATE feeds SET last_fetched_at = NOW(), updated_at = NOW() WHERE id = $1 RETURNING *;
+
+-- name: FeedsNotFollowedByUser :many
+SELECT f.*
+FROM public.feeds f
+LEFT JOIN public.feed_follows ff ON f.id = ff.feed_id AND ff.user_id = $1
+WHERE ff.id IS NULL;
