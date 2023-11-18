@@ -68,7 +68,7 @@ func (apiCfg *apiConfig) handlerDeleteFeedFollows(w http.ResponseWriter, r *http
 	}
 
 	err = apiCfg.DB.DeleteFeedFollow(r.Context(), database.DeleteFeedFollowParams{
-		ID:     feedFollowIDUUID,
+		FeedID: feedFollowIDUUID,
 		UserID: user.ID,
 	})
 
