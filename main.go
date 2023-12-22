@@ -36,16 +36,30 @@ func main() {
 	// Define and mount API routes.
 	mountAPIRoutes(router, apiCfg)
 
-	// Start the HTTP server.
-	startHTTPServer(server)
+	// Create a channel to signal when both the server and scraping are done
+	done := make(chan bool)
 
-	config := ScrapingConfig{
-		DB:                  db,
-		Concurrency:         10,
-		TimeBetweenRequests: time.Minute,
-	}
-	// Start the scraper in the background.
-	StartScraping(config)
+	// Start the HTTP server in a goroutine
+	go func() {
+		startHTTPServer(server)
+		done <- true
+	}()
+
+	// Start the scraping process in the background
+	go func() {
+		config := ScrapingConfig{
+			DB:                  db,
+			Concurrency:         10,
+			TimeBetweenRequests: time.Minute,
+		}
+		// Start the scraper in the background.
+		StartScraping(config)
+		done <- true
+	}()
+
+	// Wait for both the server and scraping to finish
+	<-done
+	<-done
 
 }
 
